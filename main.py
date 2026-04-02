@@ -32,20 +32,24 @@ def clean_tweet_text(text):
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-def get_latest_tweets():
+def get_tweets():
     try:
         url = "https://api.twitterapi.io/twitter/user/last_tweets"
         headers = {"X-API-Key": TWITTERAPI_KEY}
-        params  = {"userName": X_USERNAME}
-        response = requests.get(url, headers=headers, params=params, timeout=15)
-        print(f"[API] Status: {response.status_code}")
-        data = response.json()
-        print(f"[API] Response: {str(data)[:200]}")
-        return data.get("data", {}).get("tweets", [])
+        params = {"userName": X_USERNAME}
+        r = requests.get(url, headers=headers, params=params, timeout=15)
+        print(f"Status: {r.status_code}")
+        j = r.json()
+        # The data is inside j["data"]["tweets"]
+        tweets = j.get("data", {}).get("tweets", [])
+        print(f"Found {len(tweets)} tweets")
+        if tweets:
+            print(f"Latest tweet ID: {tweets[0]['id']}")
+        return tweets
     except Exception as e:
-        print(f"[ERROR] Fetch failed: {e}")
+        print(f"Fetch error: {e}")
         return []
-
+        
 def send_to_telegram(text):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
