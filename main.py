@@ -4,7 +4,7 @@ import re
 import os
 
 TWITTERAPI_KEY  = "new1_f300b830a66e465e87523b975619d861"
-X_USERNAME      = "cppfta"
+X_USERNAME      = "cryptoplusplus1"
 TELEGRAM_TOKEN  = "8671050953:AAHyUny0bILBQyqlax7oL8jSGVp3gnroNBw"
 TELEGRAM_CHAT   = "-1001369504484"
 
