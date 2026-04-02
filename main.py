@@ -8,10 +8,10 @@ X_USERNAME      = "cryptoplusplus1"
 TELEGRAM_TOKEN  = "8671050953:AAHyUny0bILBQyqlax7oL8jSGVp3gnroNBw"
 TELEGRAM_CHAT   = "-1001369504484"
 
-CHECK_EVERY_SECONDS = 30
-LAST_TWEET_FILE     = "last_tweet_id.txt"
+CHECK_EVERY_SECONDS = 15
+LAST_TWEET_FILE = "/tmp/last_tweet_id.txt"
 
-def load_last_tweet_id():
+def load_last_id():
     try:
         if os.path.exists(LAST_TWEET_FILE):
             with open(LAST_TWEET_FILE, "r") as f:
@@ -20,19 +20,18 @@ def load_last_tweet_id():
         pass
     return None
 
-def save_last_tweet_id(tweet_id):
+def save_last_id(tid):
     try:
         with open(LAST_TWEET_FILE, "w") as f:
-            f.write(tweet_id)
+            f.write(str(tid))
     except Exception as e:
-        print(f"[ERROR] Could not save tweet ID: {e}")
+        print(f"Save error: {e}")
 
-def clean_tweet_text(text):
+def clean_text(text):
     text = re.sub(r'https://t\.co/\S+', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-def get_tweets():
+def get_latest_tweets():
     try:
         url = "https://api.twitterapi.io/twitter/user/last_tweets"
         headers = {"X-API-Key": TWITTERAPI_KEY}
@@ -40,80 +39,63 @@ def get_tweets():
         r = requests.get(url, headers=headers, params=params, timeout=15)
         print(f"Status: {r.status_code}")
         j = r.json()
-        # The data is inside j["data"]["tweets"]
         tweets = j.get("data", {}).get("tweets", [])
         print(f"Found {len(tweets)} tweets")
         if tweets:
-            print(f"Latest tweet ID: {tweets[0]['id']}")
+            print(f"Latest ID: {tweets[0]['id']}")
         return tweets
     except Exception as e:
         print(f"Fetch error: {e}")
         return []
-        
-def send_to_telegram(text):
+
+def send_telegram(text):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT, "text": text}
-        response = requests.post(url, json=payload, timeout=15)
-        result = response.json()
+        r = requests.post(url, json={"chat_id": TELEGRAM_CHAT, "text": text}, timeout=15)
+        result = r.json()
         if result.get("ok"):
-            print(f"[✓] Sent to Telegram!")
+            print(f"Sent to Telegram!")
         else:
-            print(f"[ERROR] Telegram: {result}")
+            print(f"Telegram error: {result}")
     except Exception as e:
-        print(f"[ERROR] Telegram failed: {e}")
+        print(f"Telegram error: {e}")
 
-def filter_tweet(tweet):
-    if tweet.get("text", "").startswith("RT @"):
-        return False
-    if tweet.get("isReply") and tweet.get("inReplyToUsername") != X_USERNAME:
-        return False
-    return True
+print("Bot started! Monitoring @" + X_USERNAME)
 
-print("==================================================")
-print("  X → Telegram Bot started!")
-print(f"  Monitoring: @{X_USERNAME}")
-print("==================================================")
-
-last_id = load_last_tweet_id()
-
-if last_id is None:
-    print("[INFO] First run — saving latest tweet ID...")
-    tweets = get_latest_tweets()
-    if tweets:
-        save_last_tweet_id(tweets[0]["id"])
-        print(f"[INFO] Saved ID: {tweets[0]['id']}")
-    else:
-        print("[INFO] No tweets found on first run")
+last_id = load_last_id()
 
 while True:
     try:
-        print(f"[CHECK] Fetching tweets...")
         tweets = get_latest_tweets()
-        if tweets:
-            last_id = load_last_tweet_id()
-            new_tweets = []
-            for tweet in tweets:
-                if tweet["id"] == last_id:
+
+        if tweets and last_id is None:
+            last_id = tweets[0]["id"]
+            save_last_id(last_id)
+            print(f"First run - saved ID: {last_id}")
+        elif tweets:
+            new = []
+            for t in tweets:
+                if str(t["id"]) == str(last_id):
                     break
-                new_tweets.append(tweet)
+                new.append(t)
 
-            new_tweets.reverse()
-            print(f"[INFO] Found {len(new_tweets)} new tweet(s)")
+            new.reverse()
+            print(f"New tweets: {len(new)}")
 
-            for tweet in new_tweets:
-                if filter_tweet(tweet):
-                    clean_text = clean_tweet_text(tweet["text"])
-                    if clean_text:
-                        send_to_telegram(clean_text)
-                        time.sleep(1)
+            for t in new:
+                txt = t.get("text", "")
+                if txt.startswith("RT @"):
+                    continue
+                clean = clean_text(txt)
+                if clean:
+                    send_telegram(clean)
+                    time.sleep(2)
 
-            if new_tweets:
-                save_last_tweet_id(tweets[0]["id"])
-        else:
-            print("[INFO] No tweets returned")
+            if new:
+                last_id = tweets[0]["id"]
+                save_last_id(last_id)
 
     except Exception as e:
-        print(f"[ERROR] Loop error: {e}")
+        print(f"Loop error: {e}")
 
     time.sleep(CHECK_EVERY_SECONDS)
