@@ -8,7 +8,7 @@ X_USERNAME      = "cryptoplusplus1"
 TELEGRAM_TOKEN  = "8671050953:AAHyUny0bILBQyqlax7oL8jSGVp3gnroNBw"
 TELEGRAM_CHAT   = "-1001369504484"
 
-CHECK_EVERY_SECONDS = 10
+CHECK_EVERY_SECONDS = 30
 LAST_TWEET_FILE     = "last_tweet_id.txt"
 
 def load_last_tweet_id():
