@@ -41,7 +41,7 @@ def get_latest_tweets():
         print(f"[API] Status: {response.status_code}")
         data = response.json()
         print(f"[API] Response: {str(data)[:200]}")
-        return data.get("tweets", [])
+        return data.get("data", {}).get("tweets", [])
     except Exception as e:
         print(f"[ERROR] Fetch failed: {e}")
         return []
