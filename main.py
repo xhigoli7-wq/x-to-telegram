@@ -10,7 +10,7 @@ TELEGRAM_CHAT   = "-1001369504484"
 # Add as many X accounts as you want here!
 X_USERNAMES = [
     "cryptoplusplus1",
-    "Cointelegraph",
+    "KobeissiLetter",
 ]
 
 CHECK_EVERY_SECONDS = 30
